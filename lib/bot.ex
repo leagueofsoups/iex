@@ -4,11 +4,19 @@ defmodule Bot do
 
 	def supervisor do
 		children = [
-			worker(Abs_GenSrv, [[1,2,3], [name: SimpleQueue]])
+			worker(Queue, [[1,2,3], [name: SimpleQueue]])
 		]
 
 		{:ok, pid} = Supervisor.start_link(children, strategy: :one_for_all)
 		Supervisor.count_children(pid)
+
+		children_telegram_bot = [
+			worker(KV, [%{}, [name: TelegramBot]])
+		]
+
+		{:ok, pid} = Supervisor.start_link(children_telegram_bot, strategy: :one_for_all)
+		Supervisor.count_children(pid)
+
 	end
 
 	def telegram_proxy_opt do
@@ -24,8 +32,8 @@ defmodule Bot do
 				]
 	end
 
-	def telegram_pull(pid) do
-		{:ok, offset} = Abs_GenSrv.get_key(pid, 'offset') 
+	def telegram_pull do
+		{:ok, offset} = KV.get_key(TelegramBot, 'offset') 
 		
 		HTTPoison.start
 
@@ -68,37 +76,33 @@ defmodule Bot do
 			 		end
 				end
 
-				Abs_GenSrv.kv(pid, 'offset', update_id)
+				KV.kv(TelegramBot, 'offset', update_id)
 
 			end
 		end)
 
-		telegram_pull(pid)
+		telegram_pull
 	end
 
-	def telegram_init do
-		{:ok, pid} = Abs_GenSrv.start_link(%{}, 'general')
-		telegram_pull(pid)
-	end
-
-	def client do
+	def init do
 		Bot.supervisor
+		#telegram_pull 		#fix it
 		
-		Abs_GenSrv.push(SimpleQueue, 4)
+		Queue.push(SimpleQueue, 4)
 
-		val = Abs_GenSrv.pop(SimpleQueue)
+		val = Queue.pop(SimpleQueue)
 		IO.puts(val)
 		
-		val = Abs_GenSrv.pop(SimpleQueue)
+		val = Queue.pop(SimpleQueue)
 		IO.puts(val)
 
-		val = Abs_GenSrv.pop(SimpleQueue)
+		val = Queue.pop(SimpleQueue)
 		IO.puts(val)
 
-		val = Abs_GenSrv.pop(SimpleQueue)
+		val = Queue.pop(SimpleQueue)
 		IO.puts(val)
 
-		val = Abs_GenSrv.pop(SimpleQueue)
+		val = Queue.pop(SimpleQueue)
 		IO.puts(val)
 	end
 end
