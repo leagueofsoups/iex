@@ -4,19 +4,22 @@ defmodule Bot do
 
 	def supervisor do
 		children = [
-			worker(Queue, [[1,2,3], [name: SimpleQueue]])
+			%{
+				id: SimpleQueue,
+				start: {Queue, :start_link, [[1,2,3], [name: SimpleQueue]]}
+			},
+			%{
+				id: Telegram_KV,
+				start: {KV, :start_link, [%{}, [name: Telegram_KV]]}
+			},
+			%{
+				id: TelegramBot,
+				start: {Bot, :start_link, []}
+			}
 		]
 
 		{:ok, pid} = Supervisor.start_link(children, strategy: :one_for_all)
-		Supervisor.count_children(pid)
-
-		children_telegram_bot = [
-			worker(KV, [%{}, [name: TelegramBot]])
-		]
-
-		{:ok, pid} = Supervisor.start_link(children_telegram_bot, strategy: :one_for_all)
-		Supervisor.count_children(pid)
-
+		#Supervisor.count_children(pid)
 	end
 
 	def telegram_proxy_opt do
@@ -32,8 +35,12 @@ defmodule Bot do
 				]
 	end
 
+	def start_link do
+		telegram_pull
+	end
+
 	def telegram_pull do
-		{:ok, offset} = KV.get_key(TelegramBot, 'offset') 
+		{:ok, offset} = KV.get_key(Telegram_KV, 'offset') 
 		
 		HTTPoison.start
 
@@ -57,7 +64,7 @@ defmodule Bot do
 
 				chat_id = x_data["from"]["id"]
 
-				if Map.has_key?(x_data, "data")  do			# get cb data
+				if Map.has_key?(x_data, "data")  do						# get cb data
 					cb_data = x_data["data"]
 					IO.puts("#{cb_data} form #{chat_id}")
 				else
@@ -67,7 +74,7 @@ defmodule Bot do
 
 					case message_text do
 			 			"test" ->
-			 				body = "{\"chat_id\":339507845, \"text\":\"pruebax\", \"reply_markup\": {\"inline_keyboard\": [[{\"text\":\"LaResistencia.co\", \"callback_data\": \"CB_DATA\"}]]} }"
+			 				body = "{\"chat_id\":#{chat_id}, \"text\":\"pruebax\", \"reply_markup\": {\"inline_keyboard\": [[{\"text\":\"LaResistencia.co\", \"callback_data\": \"#{chat_id}_CB_DATA\"}]]} }"
 			 				url = "https://api.telegram.org/bot#{telegram_token}/sendMessage"
 			 				HTTPoison.post "#{url}", body, headers, options
 
@@ -76,7 +83,7 @@ defmodule Bot do
 			 		end
 				end
 
-				KV.kv(TelegramBot, 'offset', update_id)
+				KV.kv(Telegram_KV, 'offset', update_id)
 
 			end
 		end)
@@ -86,7 +93,6 @@ defmodule Bot do
 
 	def init do
 		Bot.supervisor
-		#telegram_pull 		#fix it
 		
 		Queue.push(SimpleQueue, 4)
 
