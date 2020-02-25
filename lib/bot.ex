@@ -129,6 +129,8 @@ defmodule Bot do
 		{:ok, %HTTPoison.Response{body: body}} = HTTPoison.get "#{url}", headers, options
 
 		{:ok, result} = Poison.decode(body)
+
+		result
 		
 	end
 
@@ -138,7 +140,26 @@ defmodule Bot do
 		#jql = "updatedDate > -3d  order by updatedDate DESC"
 		result = jql_exec("updatedDate < -300d  order by updatedDate DESC")
 
-		IO.inspect(result["issues"])
+		#IO.inspect(result["issues"])
+
+		Enum.map(result["issues"], fn task -> 
+			str_updated   = task["fields"]["updated"]
+			task_id       = task["key"]
+			task_name     = task["fields"]["summary"]
+
+			IO.puts("#{str_updated} #{task_id} #{task_name}")
+			#IO.inspect(x) 
+			
+			#tuple_updated = self.date_convertor(str_updated)
+			#updated       = int(mktime(tuple_updated.timetuple()))
+
+			#my_task = ()		
+			#link          = "%s/browse/%s" % (self.jira_url, task_id)
+			#my_task = (task_id, task_name, link, updated)
+			#result.append(my_task)
+		end)
+
+		
 
 	end
 end
