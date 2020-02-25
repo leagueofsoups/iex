@@ -125,8 +125,10 @@ defmodule Bot do
 		headers = [{"Content-Type", "application/json"}]
 		options = [hackney: [basic_auth: {"#{jira_user}", "#{jira_pass}"}] ,follow_redirect: true]
 		url = URI.encode("#{jira_host}/rest/api/2/search?jql=#{jql}")
-		
-		HTTPoison.get "#{url}", headers, options
+
+		{:ok, %HTTPoison.Response{body: body}} = HTTPoison.get "#{url}", headers, options
+
+		{:ok, result} = Poison.decode(body)
 		
 	end
 
@@ -134,7 +136,10 @@ defmodule Bot do
 		jira_host = "http://jira.int.tsum.com"
 
 		#jql = "updatedDate > -3d  order by updatedDate DESC"
-		jql_exec("updatedDate < -300d  order by updatedDate DESC")
+		result = jql_exec("updatedDate < -300d  order by updatedDate DESC")
+
+		IO.inspect(result)
+
 	end
 end
 
