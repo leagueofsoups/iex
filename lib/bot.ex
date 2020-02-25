@@ -36,7 +36,7 @@ defmodule Bot do
 	end
 
 	def start_link do
-		telegram_pull
+		telegram_pull()
 	end
 
 	def telegram_pull do
@@ -44,7 +44,7 @@ defmodule Bot do
 		
 		HTTPoison.start
 
-		options = telegram_proxy_opt		
+		options = telegram_proxy_opt()
 		telegram_token = Application.fetch_env!(:bot, :telegram_token)
 		url = "https://api.telegram.org/bot#{telegram_token}/getUpdates?offset=#{offset}"
 		headers = [{"Content-Type", "application/json"}]
@@ -88,7 +88,7 @@ defmodule Bot do
 			end
 		end)
 
-		telegram_pull
+		telegram_pull()
 	end
 
 	def init do
@@ -110,6 +110,31 @@ defmodule Bot do
 
 		val = Queue.pop(SimpleQueue)
 		IO.puts(val)
+	end
+
+	##############################
+
+	def jql_exec(jql) do
+
+		jira_host = Application.fetch_env!(:bot, :jira_host)
+		jira_user = Application.fetch_env!(:bot, :jira_user)
+		jira_pass = Application.fetch_env!(:bot, :jira_pass)
+
+		HTTPoison.start
+
+		headers = [{"Content-Type", "application/json"}]
+		options = [hackney: [basic_auth: {"#{jira_user}", "#{jira_pass}"}] ,follow_redirect: true]
+		url = URI.encode("#{jira_host}/rest/api/2/search?jql=#{jql}")
+		
+		HTTPoison.get "#{url}", headers, options
+		
+	end
+
+	def jira do
+		jira_host = "http://jira.int.tsum.com"
+
+		#jql = "updatedDate > -3d  order by updatedDate DESC"
+		jql_exec("updatedDate < -300d  order by updatedDate DESC")
 	end
 end
 
