@@ -138,7 +138,7 @@ defmodule Bot do
 		#jql = "updatedDate > -3d  order by updatedDate DESC"
 		result = jql_exec("updatedDate < -300d  order by updatedDate DESC")
 
-		IO.inspect(result)
+		IO.inspect(result["issues"])
 
 	end
 end
